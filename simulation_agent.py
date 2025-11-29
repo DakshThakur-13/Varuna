@@ -38,6 +38,7 @@ except ImportError:
 
 # Load environment variables
 load_dotenv()
+load_dotenv('.env.local')
 
 # Initialize Supabase client
 SUPABASE_URL = os.getenv("NEXT_PUBLIC_SUPABASE_URL", "")
@@ -76,9 +77,9 @@ class Config:
     CRISIS_PATIENT_MULTIPLIER = 3.0
     
     # Timing (in seconds)
-    NORMAL_PATIENT_INTERVAL = 120      # 2 minutes in normal
-    CRISIS_PATIENT_INTERVAL = 20       # 20 seconds in crisis
-    ENVIRONMENTAL_UPDATE_INTERVAL = 30  # Update AQI every 30 seconds
+    NORMAL_PATIENT_INTERVAL = 10      # 10 seconds for demo
+    CRISIS_PATIENT_INTERVAL = 5       # 5 seconds in crisis
+    ENVIRONMENTAL_UPDATE_INTERVAL = 10  # Update AQI every 10 seconds
     
     # Patient generation weights
     RESPIRATORY_PROBABILITY_NORMAL = 0.15

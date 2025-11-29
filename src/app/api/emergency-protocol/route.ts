@@ -1,16 +1,9 @@
 'use server';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import Groq from 'groq-sdk';
 import { EmergencyType, EMERGENCY_SCENARIOS } from '@/types/emergency';
 import { getRAGContext, getEmergencyResources, getHybridSearchEngine } from '@/lib/hybridSearch';
-
-// Initialize clients
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY

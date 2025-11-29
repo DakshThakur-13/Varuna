@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/lib/supabase';
 
 interface NavItem {
   name: string;
@@ -34,9 +35,9 @@ const mainNavItems: NavItem[] = [
   { name: 'Command Center', href: '/dashboard', icon: LayoutDashboard, description: 'Real-time overview' },
   { name: 'AI Operations', href: '/agent', icon: Bot, badgeColor: 'bg-cyan-500', description: 'Intelligent agent' },
   { name: 'Patient Intake', href: '/intake', icon: ClipboardPlus, description: 'Triage & admission' },
-  { name: 'Patient Registry', href: '/patients', icon: Users, badge: 12, description: 'Active cases' },
-  { name: 'Staff Management', href: '/staff', icon: Stethoscope, badge: 8, description: 'Personnel status' },
-  { name: 'Resource Inventory', href: '/inventory', icon: Package, badge: 3, badgeColor: 'bg-red-500', description: 'Supplies & equipment' },
+  { name: 'Patient Registry', href: '/patients', icon: Users, description: 'Active cases' },
+  { name: 'Staff Management', href: '/staff', icon: Stethoscope, description: 'Personnel status' },
+  { name: 'Resource Inventory', href: '/inventory', icon: Package, badgeColor: 'bg-red-500', description: 'Supplies & equipment' },
 ];
 
 const secondaryNavItems: NavItem[] = [
@@ -50,6 +51,50 @@ export default function Navigation() {
   const [notifications] = useState(5);
   const [currentTime, setCurrentTime] = useState<string>('');
   const [isExpanded, setIsExpanded] = useState(true);
+  const [counts, setCounts] = useState({ patients: 0, staff: 0, inventory: 0 });
+
+  useEffect(() => {
+    const fetchCounts = async () => {
+      if (!supabase) return;
+      
+      // Patients count
+      const { count: patientCount } = await supabase
+        .from('patients')
+        .select('*', { count: 'exact', head: true });
+
+      // Staff count (on-duty)
+      const { count: staffCount } = await supabase
+        .from('staff')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'on-duty');
+
+      // Critical inventory count
+      const { data: inventory } = await supabase
+        .from('inventory')
+        .select('status');
+      
+      const criticalInventory = inventory?.filter(i => 
+        i.status === 'critical' || i.status === 'out-of-stock'
+      ).length || 0;
+
+      setCounts({
+        patients: patientCount || 0,
+        staff: staffCount || 0,
+        inventory: criticalInventory
+      });
+    };
+
+    fetchCounts();
+
+    let subscription: any = null;
+    if (supabase) {
+      subscription = supabase.channel('nav-counts')
+        .on('postgres_changes', { event: '*', schema: 'public' }, () => fetchCounts())
+        .subscribe();
+    }
+
+    return () => { if (subscription) subscription.unsubscribe(); };
+  }, []);
 
   useEffect(() => {
     const updateTime = () => {
@@ -125,6 +170,13 @@ export default function Navigation() {
           </p>
           {mainNavItems.map((item) => {
             const isActive = pathname === item.href;
+            
+            // Dynamic badge logic
+            let badgeValue = item.badge;
+            if (item.href === '/patients') badgeValue = counts.patients;
+            if (item.href === '/staff') badgeValue = counts.staff;
+            if (item.href === '/inventory') badgeValue = counts.inventory;
+
             return (
               <Link
                 key={item.name}
@@ -151,12 +203,12 @@ export default function Navigation() {
                         <span className="text-[10px] text-slate-500 block truncate">{item.description}</span>
                       )}
                     </div>
-                    {item.badge !== undefined && (
+                    {badgeValue !== undefined && badgeValue > 0 && (
                       <span className={cn(
                         "px-2 py-0.5 text-[10px] font-bold rounded-md",
                         item.badgeColor || "bg-slate-700 text-slate-300"
                       )}>
-                        {item.badge}
+                        {badgeValue}
                       </span>
                     )}
                   </>

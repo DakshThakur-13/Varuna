@@ -157,7 +157,7 @@ export default function DashboardPage() {
   const [defconLevel, setDefconLevel] = useState<1 | 2 | 3 | 4 | 5>(4);
   const [aqi, setAqi] = useState(285);
   const [surgeData, setSurgeData] = useState<ReturnType<typeof generateMockSurgeData>>([]);
-  const [resourceData] = useState(generateResourceRadarData());
+  const [resourceData, setResourceData] = useState(generateResourceRadarData());
   
   const [activePatients, setActivePatients] = useState(0);
   const [occupancyRate, setOccupancyRate] = useState(78);
@@ -175,64 +175,158 @@ export default function DashboardPage() {
   // Fetch real stats from Supabase
   useEffect(() => {
     const fetchStats = async () => {
-      if (!supabase) {
-        // Fallback to mock data
-        const patientData = generatePatientGridData();
-        const staffData = generateStaffData();
-        const inventoryData = generateInventoryData();
-        setPatientCount(patientData.length);
-        setCriticalPatients(patientData.filter(p => p.status === 'critical').length);
-        setStaffCount(staffData.length);
-        setStaffOnDuty(staffData.filter(s => s.status === 'on-duty').length);
-        setInventoryCount(inventoryData.length);
-        setCriticalInventory(inventoryData.filter(i => i.status === 'critical').length);
-        setActivePatients(patientData.length);
-        return;
-      }
+      if (!supabase) return;
       
       try {
-        // Fetch patient stats
-        const { data: patients } = await supabase.from('patients').select('id, status');
-        if (patients) {
-          setPatientCount(patients.length);
-          setCriticalPatients(patients.filter(p => p.status === 'critical').length);
-          setActivePatients(patients.length);
-        }
+        // 1. Fetch Patients Data
+        const { data: patients, error: patientsError } = await supabase
+          .from('patients')
+          .select('triage_level, status');
+
+        if (patientsError) throw patientsError;
+
+        const totalPatients = patients?.length || 0;
+        const totalBeds = 100; // Standard ER capacity
+        const occupancy = Math.round((totalPatients / totalBeds) * 100);
         
-        // Fetch staff stats
-        const { data: staff } = await supabase.from('staff').select('id, status');
-        if (staff) {
-          setStaffCount(staff.length);
-          setStaffOnDuty(staff.filter(s => s.status === 'on-duty').length);
-          // Calculate staff ratio
-          if (patients && patients.length > 0) {
-            setStaffRatio(staff.filter(s => s.status === 'on-duty').length / patients.length);
-          }
-        }
+        const criticalCount = patients?.filter(p => 
+          (p.triage_level && p.triage_level <= 2)
+        ).length || 0;
+
+        setPatientCount(totalPatients);
+        setCriticalPatients(criticalCount);
+        setActivePatients(totalPatients);
+        setOccupancyRate(occupancy);
+
+        // 2. Fetch Staff Data
+        const { data: allStaff, error: staffError } = await supabase
+          .from('staff')
+          .select('status');
+
+        if (staffError) throw staffError;
         
-        // Fetch inventory stats
-        const { data: inventory } = await supabase.from('inventory').select('id, status');
-        if (inventory) {
-          setInventoryCount(inventory.length);
-          setCriticalInventory(inventory.filter(i => i.status === 'critical').length);
-        }
+        const totalStaff = allStaff?.length || 0;
+        const activeStaff = allStaff?.filter(s => s.status === 'on-duty').length || 0;
+
+        setStaffCount(totalStaff);
+        setStaffOnDuty(activeStaff);
         
-        // Fetch resource_status for oxygen etc
-        const { data: resources } = await supabase.from('resource_status').select('*').limit(1);
-        if (resources && resources.length > 0) {
-          const res = resources[0];
-          if (res.beds_total > 0) {
-            setOccupancyRate(Math.round((res.beds_occupied / res.beds_total) * 100));
-          }
-          // Oxygen hours calculation (assuming 1 unit = 1 hour worth)
-          setOxygenHours(Math.round((res.oxygen_supply / 100) * 24));
+        if (totalPatients > 0) {
+          setStaffRatio(activeStaff / totalPatients);
         }
+
+        // 3. Fetch Inventory Data (All items)
+        const { data: allInventory, error: inventoryError } = await supabase
+          .from('inventory')
+          .select('*');
+
+        if (inventoryError) throw inventoryError;
+
+        // Calculate Inventory Stats
+        const totalInventoryItems = allInventory?.length || 0;
+        const criticalInventoryCount = allInventory?.filter(i => 
+          i.status === 'critical' || i.status === 'out-of-stock'
+        ).length || 0;
+
+        setInventoryCount(totalInventoryItems);
+        setCriticalInventory(criticalInventoryCount);
+
+        // Calculate Oxygen Levels
+        const oxygenItems = allInventory?.filter(i => i.name.toLowerCase().includes('oxygen')) || [];
+        let oxygenLevel = 0;
+        if (oxygenItems.length > 0) {
+            const totalOxygen = oxygenItems.reduce((acc, item) => acc + (item.current_stock || 0), 0);
+            const maxCapacity = oxygenItems.reduce((acc, item) => acc + (item.max_stock || 100), 0);
+            oxygenLevel = maxCapacity > 0 ? Math.round((totalOxygen / maxCapacity) * 100) : 0;
+            
+            // Calculate hours remaining (assuming 10 units/hour consumption)
+            const consumptionRate = 10;
+            const hoursRemaining = Math.round(totalOxygen / consumptionRate);
+            setOxygenHours(hoursRemaining);
+        } else {
+            setOxygenHours(0);
+        }
+
+        // Calculate Category Scores for Radar
+        const calculateCategoryScore = (category: string) => {
+            const items = allInventory?.filter(i => i.category === category) || [];
+            if (items.length === 0) return 0;
+            const totalCurrent = items.reduce((acc, item) => acc + (item.current_stock || 0), 0);
+            const totalMax = items.reduce((acc, item) => acc + (item.max_stock || 100), 0);
+            return totalMax > 0 ? Math.min(100, Math.round((totalCurrent / totalMax) * 100)) : 0;
+        };
+
+        const medsScore = calculateCategoryScore('medication');
+        const ppeScore = calculateCategoryScore('ppe');
+
+        // Calculate DEFCON based on real data
+        let newDefcon: 1 | 2 | 3 | 4 | 5 = 5;
+        if (occupancy > 90 || criticalCount > 10) newDefcon = 1;
+        else if (occupancy > 80 || criticalCount > 5) newDefcon = 2;
+        else if (occupancy > 70) newDefcon = 3;
+        else if (occupancy > 60) newDefcon = 4;
+        
+        setDefconLevel(newDefcon);
+
+        // 4. Update Resource Radar
+        // Normalize values to 0-100 scale for the chart
+        const staffScore = Math.min(100, Math.round(((activeStaff || 0) / (totalPatients || 1)) * 100)); // 1:1 ratio = 100%
+        const bedScore = Math.max(0, 100 - occupancy); // Available beds
+        const oxygenScore = Math.min(100, oxygenLevel);
+        
+        setResourceData([
+          { resource: 'Staff', value: staffScore, fullMark: 100 },
+          { resource: 'Beds', value: bedScore, fullMark: 100 },
+          { resource: 'Oxygen', value: oxygenScore, fullMark: 100 },
+          { resource: 'Meds', value: medsScore, fullMark: 100 },
+          { resource: 'PPE', value: ppeScore, fullMark: 100 },
+        ]);
+
+        // 5. Fetch Recent Alerts for Feed
+        const { data: alerts } = await supabase
+          .from('incident_alerts')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (alerts) {
+          const alertItems = alerts.map(alert => ({
+            id: alert.id,
+            time: formatTime(new Date(alert.created_at)),
+            message: `ALERT: ${alert.incident_type} - ${alert.description.substring(0, 50)}...`,
+            type: 'alert' as const
+          }));
+          
+          setFeedItems(prev => {
+            // Merge new alerts with existing feed, avoiding duplicates
+            const existingIds = new Set(prev.map(i => i.id));
+            const newItems = alertItems.filter(i => !existingIds.has(i.id));
+            return [...newItems, ...prev].slice(0, 50);
+          });
+        }
+
       } catch (error) {
         console.error('Error fetching dashboard stats:', error);
       }
     };
     
     fetchStats();
+    
+    // Real-time subscription
+    let subscription: any = null;
+    
+    if (supabase) {
+      subscription = supabase
+        .channel('dashboard_updates')
+        .on('postgres_changes', { event: '*', schema: 'public' }, () => {
+          fetchStats();
+        })
+        .subscribe();
+    }
+
+    return () => {
+      if (subscription) subscription.unsubscribe();
+    };
   }, []);
   
   // Chat state - initialize empty to avoid hydration mismatch
@@ -270,11 +364,9 @@ export default function DashboardPage() {
     setDefconLevel(newDefcon);
   }, [occupancyRate, oxygenHours, staffRatio]);
 
+  // Simulate environmental changes (AQI) only - other stats are real
   useEffect(() => {
     const interval = setInterval(() => {
-      setActivePatients(prev => Math.max(40, Math.min(120, prev + Math.floor(Math.random() * 5) - 2)));
-      setOccupancyRate(prev => Math.max(50, Math.min(100, prev + Math.floor(Math.random() * 3) - 1)));
-      setOxygenHours(prev => Math.max(4, Math.min(48, prev + (Math.random() > 0.7 ? -1 : 0.5))));
       // AQI changes more gradually and realistically
       setAqi(prev => {
         const change = Math.floor(Math.random() * 15) - 7; // -7 to +7
@@ -306,7 +398,7 @@ export default function DashboardPage() {
       .channel('patients-realtime')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'patients' }, (payload) => {
         const newPatient = payload.new as Patient;
-        setActivePatients(prev => prev + 1);
+        // Count is handled by global subscription fetchStats()
         const triageInfo = newPatient.triage_level 
           ? `CTAS ${newPatient.triage_level} (${CTAS_LEVELS[newPatient.triage_level as keyof typeof CTAS_LEVELS]?.name || 'Unknown'})`
           : 'Pending Triage';
@@ -423,7 +515,7 @@ export default function DashboardPage() {
               <div className="flex items-center gap-2 px-3 py-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
                 <Users className="w-4 h-4 text-blue-400" />
                 <span className="text-sm font-medium text-white">{activePatients}</span>
-                <span className="text-xs text-slate-500">Active</span>
+                <span className="text-xs text-slate-500">Total Patients</span>
               </div>
             </div>
           </div>
@@ -487,9 +579,9 @@ export default function DashboardPage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
             <KPICard
-              title="Patient Load"
+              title="Total Patient Load"
               value={activePatients}
-              unit="active"
+              unit="patients"
               icon={Users}
               trend={activePatients > 60 ? 'up' : 'stable'}
               trendValue={activePatients > 60 ? '+12%' : '±0%'}
@@ -548,7 +640,7 @@ export default function DashboardPage() {
                 </div>
                 <ArrowRight className="w-5 h-5 text-slate-600 group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
               </div>
-              <h3 className="text-lg font-semibold text-white mb-1">Patient Grid</h3>
+              <h3 className="text-lg font-semibold text-white mb-1">Patient Registry</h3>
               <p className="text-slate-400 text-sm font-medium">
                 <span className="text-white">{patientCount}</span> patients • <span className="text-rose-400">{criticalPatients}</span> critical
               </p>
