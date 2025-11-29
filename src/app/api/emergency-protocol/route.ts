@@ -5,9 +5,13 @@ import Groq from 'groq-sdk';
 import { EmergencyType, EMERGENCY_SCENARIOS } from '@/types/emergency';
 import { getRAGContext, getEmergencyResources, getHybridSearchEngine } from '@/lib/hybridSearch';
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY
-});
+// Initialize Groq lazily
+const getGroqClient = () => {
+  if (!process.env.GROQ_API_KEY) return null;
+  return new Groq({
+    apiKey: process.env.GROQ_API_KEY
+  });
+};
 
 // Interface for scenario input
 interface EmergencyScenarioInput {
@@ -642,6 +646,11 @@ Generate a JSON response with:
 }`;
 
   try {
+    const groq = getGroqClient();
+    if (!groq) {
+      throw new Error('Groq API key not configured');
+    }
+
     const completion = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
       messages: [
