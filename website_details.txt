@@ -1,0 +1,192 @@
+VARUNA AI - WEBSITE DOCUMENTATION
+
+OVERVIEW
+Varuna AI is a comprehensive healthcare crisis management system designed for emergency departments. It features a modern, dark-themed interface with real-time data visualization, AI-powered triage, and autonomous resource orchestration.
+
+---
+
+1. LANDING PAGE (/)
+   Visuals: Dark gradient background (slate-950) with animated grid lines.
+   
+   Hero Section:
+   - Logo: Shield icon in a violet/blue gradient box.
+   - Title: "Varuna AI" with gradient text.
+   - Subtitle: "The AI-Native Nervous System for Healthcare Facilities".
+   - Description: Text about predictive intelligence and transforming emergency departments.
+   - CTA Buttons:
+     - "Frontline Intake" (White button, leads to /intake)
+     - "Command Center" (Gradient violet/blue button, leads to /dashboard)
+
+   Features Section ("Three-Pillar Architecture"):
+   - Frontline Interface Card: Describes the "Clinical Clarity" design for triage nurses.
+   - Command Center Card: Describes the "Operational Intensity" dashboard for admins.
+   - Simulation Agent Card: Describes the "Ghost in the Machine" autonomous Python script.
+
+   Scenarios Section ("Built for Real Crises"):
+   - Pollution Surges Card: Icon of wind, describes handling AQI spikes.
+   - Mass Gatherings Card: Icon of users, describes handling stampede risks.
+   - Epidemic Outbreaks Card: Icon of bell, describes handling viral outbreaks.
+
+   Tech Stack Section:
+   - Badges for Next.js, TypeScript, Tailwind CSS, Supabase, Recharts, Python, etc.
+
+---
+
+2. NAVIGATION & LAYOUT
+   Sidebar (Desktop):
+   - Fixed left sidebar (width 64px/256px).
+   - Logo area at the top.
+   - Main Menu:
+     - Dashboard (Layout icon)
+     - AI Agent (Bot icon, Cyan badge)
+     - Patient Intake (Clipboard icon)
+     - Patients (Users icon, numeric badge)
+     - Staff (Stethoscope icon, numeric badge)
+     - Inventory (Package icon, Red badge)
+   - System Menu:
+     - Analytics (Activity icon)
+     - Settings (Settings icon)
+   - User Profile section at the bottom.
+
+---
+
+3. DASHBOARD (/dashboard)
+   Purpose: Central command center for hospital operations.
+
+   Key Performance Indicators (KPI Cards):
+   - DEFCON Level: Current alert status (1-5).
+   - Air Quality Index (AQI): Real-time environmental monitoring.
+   - Active Patients: Total count of patients in the ER.
+   - ER Occupancy: Percentage of beds occupied.
+   - Oxygen Reserve: Hours of autonomy remaining.
+   - Staffing Ratio: Nurse-to-patient ratio.
+
+   Visualizations:
+   - Patient Surge Prediction: Area chart showing historical and predicted patient influx.
+   - Resource Radar: Radar chart showing status of Beds, Staff, Oxygen, PPE, Blood, and Meds.
+
+   Neural Command Interface:
+   - A chat interface titled "Neural Command & Control".
+   - Allows natural language queries to the AI (e.g., "What is the current status?").
+   - Displays AI responses with typing indicators.
+
+   Live Event Feed:
+   - Scrolling list of system events (e.g., "New patient admitted", "Environmental sensors connected").
+
+---
+
+4. PATIENT INTAKE (/intake)
+   Purpose: Streamlined form for triage nurses to input patient data.
+
+   Patient Details Form:
+   - Full Name (Text input)
+   - Age (Number input)
+   - Gender (Select: Male, Female, Other)
+   - Chief Complaint (Text area)
+   - Symptom Duration (Text input)
+   - Severity Slider (1-10 scale with visual color feedback).
+
+   Vitals Input:
+   - Blood Pressure (Systolic/Diastolic)
+   - Heart Rate (BPM)
+   - Respiratory Rate (BPM)
+   - Oxygen Saturation (SpO2 %)
+   - Temperature (Celsius/Fahrenheit toggle)
+
+   AI Triage Action:
+   - "Run AI Triage Assessment" button.
+   
+   Triage Results Panel (appears after submission):
+   - CTAS Level: Large badge (1-5) with classification (e.g., Resuscitation, Emergent).
+   - Confidence Score: Percentage.
+   - Differential Diagnosis: List of potential conditions.
+   - Assigned Bed: Specific bed allocation (e.g., "Trauma Bay 1").
+   - Clinical Pathway: Recommended next steps.
+
+---
+
+5. PATIENTS LIST (/patients)
+   Purpose: Real-time tracking of all patients in the department.
+
+   Controls:
+   - Search bar (Search by name/complaint).
+   - Status Filter (All, Waiting, Triage, Treatment, Admitted).
+   - CTAS Filter (Levels 1-5).
+
+   Patient Grid:
+   - Cards for each patient displaying:
+     - Header: Name, Age, Gender.
+     - Status Badge: Color-coded (e.g., Critical = Red, Stable = Green).
+     - Vitals Summary: HR, BP, SpO2.
+     - Chief Complaint.
+     - Wait Time: Minutes since arrival.
+     - CTAS Level indicator.
+
+---
+
+6. INVENTORY MANAGEMENT (/inventory)
+   Purpose: Track medical supplies and equipment.
+
+   Controls:
+   - Search bar.
+   - Category Filter (Medication, Equipment, Supplies, PPE, Blood).
+   - Status Filter (Adequate, Low, Critical, Out of Stock).
+
+   Inventory List:
+   - Items displayed with:
+     - Icon representing the category.
+     - Item Name and SKU.
+     - Stock Level Bar: Visual progress bar indicating quantity.
+     - Status Badge: Color-coded based on stock level.
+     - Quantity and Unit (e.g., "450 units").
+     - Location (e.g., "Storage A").
+
+---
+
+7. STAFF MANAGEMENT (/staff)
+   Purpose: Monitor staff availability and shift status.
+
+   Controls:
+   - Search bar.
+   - Role Filter (Doctor, Nurse, Specialist, Admin).
+   - Status Filter (On Duty, Off Duty, On Break).
+
+   Staff List:
+   - Cards for each staff member:
+     - Avatar/Initials.
+     - Name and Role (e.g., "Dr. Sarah Smith - Senior Resident").
+     - Department (e.g., "Emergency Medicine").
+     - Status Indicator: Green dot for On Duty, Grey for Off Duty.
+     - Contact Buttons: Call, Message.
+     - Shift timing information.
+
+---
+
+8. AI AGENT (/agent)
+   Purpose: Autonomous emergency intelligence and orchestration.
+
+   Control Panel:
+   - "Start Agent" / "Stop Agent" toggle button.
+   - Scan Interval slider (seconds).
+   - Status Indicators: Scanning (Pulse), Analyzing (Brain), Orchestrating (Network).
+
+   Dashboard Panels:
+   - Live Agent Logs: Terminal-like scrolling log of agent actions.
+   - Detected Incidents: Cards showing identified crises (e.g., "Road Accident", "Fire").
+   - Response Coordination:
+     - Hospital Alerts: Notifications sent to nearby facilities.
+     - Resource Requests: Orders placed for supplies (Oxygen, Blood, etc.).
+   - Network Status: Visualization of connected hospitals and vendors.
+
+---
+
+DESIGN SYSTEM
+- Color Palette: Dark mode dominant. Slate-950 background.
+- Accents: Violet/Blue gradients for primary actions.
+- Status Colors:
+  - Critical/Error: Red-500
+  - Warning: Amber-500
+  - Success/Stable: Emerald-500
+  - Info: Blue-500
+- Typography: Sans-serif, clean, high readability.
+- Icons: Lucide React icon set.

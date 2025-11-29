@@ -1,0 +1,41 @@
+# Varuna AI Agent Backend
+# FastAPI for async web server
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-dotenv>=1.0.0
+
+# LangGraph for stateful agent workflows
+langgraph>=0.2.0
+langchain>=0.3.0
+langchain-groq>=0.2.0
+langchain-core>=0.3.0
+
+# Pydantic for data validation
+pydantic>=2.6.0
+pydantic-settings>=2.1.0
+
+# Tavily for real-time web search
+tavily-python>=0.3.3
+
+# Supabase for database
+supabase>=2.3.4
+
+# Redis for Caching & Deduplication
+redis>=5.0.1
+
+# Data processing
+pandas>=2.2.0
+numpy>=1.26.3
+
+# Async HTTP client
+httpx>=0.26.0
+aiohttp>=3.9.3
+
+# Geolocation
+geopy>=2.4.1
+
+# Date/time handling
+python-dateutil>=2.8.2
+
+# CORS middleware
+python-multipart>=0.0.9
