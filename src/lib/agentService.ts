@@ -4,7 +4,7 @@
  */
 
 // Python backend URL
-const AGENT_BACKEND_URL = process.env.NEXT_PUBLIC_AGENT_URL || 'http://localhost:8000';
+const AGENT_BACKEND_URL = process.env.NEXT_PUBLIC_AGENT_URL || 'https://varuna-kygm.onrender.com';
 
 interface ScanResult {
   success: boolean;
